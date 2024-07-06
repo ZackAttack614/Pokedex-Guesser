@@ -90,6 +90,12 @@ function App() {
     setUserGuess(e.target.value);
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleGuess();
+    }
+  };
+
   const resetGame = () => {
     setUserGuess('');
     setMessage('');
@@ -100,6 +106,7 @@ function App() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
       <h1 className="text-4xl font-bold mb-6">Pokédex Guesser</h1>
+      <p className="text-lg mb-4">Translate the Pokédex entry and guess the Pokémon!</p>
       <label className="mb-4">
         <span className="mr-2">Select Language:</span>
         <select value={language} onChange={handleLanguageChange} className="border p-2 rounded">
@@ -107,10 +114,11 @@ function App() {
           <option value="de">German</option>
           <option value="it">Italian</option>
           <option value="fr">French</option>
+          <option value="ar">Arabic</option>
+          <option value="hi">Hindi</option>
           <option value="ja">Japanese</option>
           <option value="ru">Russian</option>
           <option value="he">Hebrew</option>
-          <option value="du">Dutch</option>
           <option value="zz">Mangled English</option>
         </select>
       </label>
@@ -121,6 +129,7 @@ function App() {
         type="text"
         value={userGuess}
         onChange={handleInputChange}
+        onKeyDown={handleKeyDown}
         disabled={gameOver}
         placeholder="Your guess"
         className="border p-2 rounded mb-4"
