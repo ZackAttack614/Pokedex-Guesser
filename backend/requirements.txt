@@ -1,0 +1,4 @@
+Flask
+Flask[async]
+google-cloud-firestore
+googletrans==4.0.0-rc1
