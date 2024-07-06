@@ -13,10 +13,17 @@ function App() {
   const [gameOver, setGameOver] = useState(false);
   const [originalEntry, setOriginalEntry] = useState('');
   const [pokemonSprite, setPokemonSprite] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     getRandomPokemon();
   }, []);
+
+  useEffect(() => {
+    if (originalEntry) {
+      getTranslatedEntry(originalEntry, language);
+    }
+  }, [language, originalEntry]);
 
   const getRandomPokemon = async () => {
     const randomId = Math.floor(Math.random() * 151) + 1;
@@ -31,18 +38,23 @@ function App() {
     setPokemonName(name);
     setPokedexEntries(entries);
     setOriginalEntry(englishEntry);
-    setTranslatedEntry(englishEntry);
     setPokemonSprite(sprite);
-    getTranslatedEntry(entries, language);
     resetGame();
   };
 
-  const getTranslatedEntry = (entries, targetLanguage) => {
-    const translation = entries.find(entry => entry.language.name === targetLanguage);
-    if (translation) {
-      setTranslatedEntry(translation.flavor_text.replace(/\s+/g, ' '));
-    } else {
+  const getTranslatedEntry = async (text, target_language) => {
+    try {
+      setLoading(true);
+      const response = await axios.post('https://translation-service-csohi2q64q-uc.a.run.app/translate', {
+        text: text,
+        target_language: target_language
+      });
+      setTranslatedEntry(response.data.translation);
+    } catch (error) {
+      console.error('Error translating text:', error);
       setTranslatedEntry('Translation not available.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -72,7 +84,6 @@ function App() {
 
   const handleLanguageChange = (e) => {
     setLanguage(e.target.value);
-    getTranslatedEntry(pokedexEntries, e.target.value);
   };
 
   const handleInputChange = (e) => {
@@ -97,6 +108,10 @@ function App() {
           <option value="it">Italian</option>
           <option value="fr">French</option>
           <option value="ja">Japanese</option>
+          <option value="ru">Russian</option>
+          <option value="he">Hebrew</option>
+          <option value="du">Dutch</option>
+          <option value="zz">Mangled English</option>
         </select>
       </label>
       <div className="bg-white p-4 rounded shadow-md mb-4" style={{ minHeight: '100px' }}>
@@ -124,11 +139,15 @@ function App() {
       <p className="text-lg mt-4">{message}</p>
       <p className="text-lg mt-2">Attempts Left: {attempts}</p>
       <div className="flex flex-col items-center mt-4" style={{ minHeight: '160px' }}>
-        {gameOver && (
-          <>
-            <img src={pokemonSprite} alt={pokemonName} className="w-24 h-24 mb-2" />
-            <p className="text-gray-600">{originalEntry}</p>
-          </>
+        {loading ? (
+          <div className="loader"></div>
+        ) : (
+          gameOver && (
+            <>
+              <img src={pokemonSprite} alt={pokemonName} className="w-24 h-24 mb-2" />
+              <p className="text-gray-600">{originalEntry}</p>
+            </>
+          )
         )}
       </div>
     </div>
