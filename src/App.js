@@ -59,7 +59,7 @@ function App() {
   };
 
   const handleGuess = () => {
-    if (userGuess.toLowerCase() === pokemonName.toLowerCase()) {
+    if (userGuess.toLowerCase() === pokemonName.split('-')[0].toLowerCase()) {
       setMessage(`Correct! The Pokémon is ${pokemonName}.`);
       setGameOver(true);
     } else {
