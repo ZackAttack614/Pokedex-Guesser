@@ -3,24 +3,29 @@ from flask import Flask, request, jsonify
 import flask_cors
 from google.cloud import firestore
 from googletrans import Translator
-from google.oauth2 import service_account
 import concurrent.futures
 import asyncio
 
-credentials = service_account.Credentials.from_service_account_file('serviceAccountKey.json')
-db = firestore.Client(credentials=credentials, project=credentials.project_id)
+db = firestore.Client()
 
 app = Flask(__name__)
 flask_cors.CORS(app)
 
 executor = concurrent.futures.ThreadPoolExecutor()
 
+mangled_lang_sequence = ['it', 'ko', 'ru', 'fr', 'es', 'ur', 'de', 'fa', 'en']
+translator = Translator()
+
 async def run_blocking_io(func, *args):
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(executor, func, *args)
 
+def translate_mangle(text):
+    for lang in mangled_lang_sequence:
+        text = translate_text(text, lang)
+    return text
+
 def translate_text(text, target_language):
-    translator = Translator()
     translated_text = translator.translate(text, dest=target_language).text
     return translated_text
 
@@ -46,10 +51,14 @@ async def translate():
     if doc.exists:
         return jsonify({'translation': doc.to_dict()['translation']})
 
-    translated_text = await run_blocking_io(translate_text, text, target_language)
+    if target_language == 'zz':
+        translated_text = await run_blocking_io(translate_mangle, text)
+    else:
+        translated_text = await run_blocking_io(translate_text, text, target_language)
+
     await run_blocking_io(set_document, doc_ref, {'text': text, 'language': target_language, 'translation': translated_text})
 
     return jsonify({'translation': translated_text})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000)
