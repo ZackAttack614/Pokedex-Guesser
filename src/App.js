@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import {Autocomplete, TextField} from '@mui/material'
 import axios from 'axios';
 import './App.css';
 
 function App() {
+  const [pokemonList, setPokemonList] = useState([])
   const [pokemonName, setPokemonName] = useState('');
   const [pokedexEntries, setPokedexEntries] = useState([]);
   const [translatedEntry, setTranslatedEntry] = useState('');
@@ -24,6 +26,13 @@ function App() {
       getTranslatedEntry(originalEntry, language);
     }
   }, [language, originalEntry]);
+
+  const fillPokemonList = async (generation) => {
+    const response = await axios.get(`https://pokeapi.co/api/v2/generation/${generation}`);
+    const data = response.data.pokemon_species.map(pokemon => pokemon.name.split('-')[0])
+    const noDuplicates = data.filter((item, index) => index === 0 || data[index - 1] !== item)
+    setPokemonList(noDuplicates);
+  }
 
   const getRandomPokemon = async () => {
     const randomId = Math.floor(Math.random() * 151) + 1;
@@ -59,7 +68,18 @@ function App() {
   };
 
   const handleGuess = () => {
-    if (userGuess.toLowerCase() === pokemonName.split('-')[0].toLowerCase()) {
+    // Make sure the pokemon is in the list
+    // Not using the userGuess value so that the guess works when
+    // the user presses enter on the autocomplete options
+    let guess = document.getElementById('user-guess').value.toLowerCase().trim();
+    setUserGuess(guess);
+    if (!pokemonList.includes(guess)) {
+      alert('Invalid Pokémon name for this generation')
+      return;
+    }
+
+    // Check if the guess is correct
+    if (guess === pokemonName.split('-')[0].toLowerCase()) {
       setMessage(`Correct! The Pokémon is ${pokemonName}.`);
       setGameOver(true);
     } else {
@@ -86,17 +106,19 @@ function App() {
     setLanguage(e.target.value);
   };
 
-  const handleInputChange = (e) => {
-    setUserGuess(e.target.value);
+  const handleInputChange = (e, newValue) => {
+    setUserGuess(newValue);
   };
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
-      handleGuess();
+      // Let materialUI's change occur first
+      setTimeout(handleGuess, 0);
     }
   };
 
   const resetGame = () => {
+    fillPokemonList(1);
     setUserGuess('');
     setMessage('');
     setAttempts(3);
@@ -125,14 +147,16 @@ function App() {
       <div className="bg-white p-4 rounded shadow-md mb-4" style={{ minHeight: '100px' }}>
         <p>{translatedEntry}</p>
       </div>
-      <input
-        type="text"
-        value={userGuess}
+      <Autocomplete
+        disablePortal
         onChange={handleInputChange}
-        onKeyDown={handleKeyDown}
+        value={userGuess}
         disabled={gameOver}
-        placeholder="Your guess"
-        className="border p-2 rounded mb-4"
+        onKeyDown={handleKeyDown}
+        id="user-guess"
+        options={pokemonList}
+        sx={{ width: 300, marginBottom: 2 }}
+        renderInput={(params) => <TextField {...params} label="Your guess" />}
       />
       <div className="flex space-x-4 mb-4">
         <button onClick={handleGuess} disabled={gameOver || userGuess === ''} className={`bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 ${gameOver || userGuess === '' ? 'opacity-50 cursor-not-allowed' : ''}`}>
