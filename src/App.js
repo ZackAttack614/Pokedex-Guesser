@@ -27,11 +27,15 @@ function App() {
     }
   }, [language, originalEntry]);
 
-  const fillPokemonList = async (generation) => {
-    const response = await axios.get(`https://pokeapi.co/api/v2/generation/${generation}`);
-    const data = response.data.pokemon_species.map(pokemon => pokemon.name.split('-')[0])
-    const noDuplicates = data.filter((item, index) => index === 0 || data[index - 1] !== item)
-    setPokemonList(noDuplicates);
+  const fillPokemonList = async (generations) => {
+    const totalList = []
+    for (const generation of generations) {
+      const response = await axios.get(`https://pokeapi.co/api/v2/generation/${generation}`);
+      const data = response.data.pokemon_species.map(pokemon => pokemon.name.split(/-(m|f)$/)[0])
+      totalList.push(...data);
+    }
+    totalList.sort()
+    setPokemonList(totalList.filter((item, index) => index === 0 || item !== totalList[index - 1]));
   }
 
   const getRandomPokemon = async () => {
@@ -41,7 +45,13 @@ function App() {
     const name = data.name;
     const entries = data.flavor_text_entries;
     const allEnglishEntries = entries.filter(entry => entry.language.name === 'en')
-    const englishEntry = allEnglishEntries[Math.floor(Math.random() * allEnglishEntries.length)].flavor_text.replace(/\s+/g, ' ');
+    // Sort out entries that contain the pokemon's name
+    let keptEntries = allEnglishEntries.filter(entry => entry.flavor_text.toLowerCase().indexOf(name) === -1);
+    // Make sure there's at least one element
+    if (keptEntries.length === 0)
+      keptEntries = allEnglishEntries
+    const englishEntry = keptEntries[Math.floor(Math.random() * keptEntries.length)].flavor_text.replace(/\s+/g, ' ');
+
     const spriteResponse = await axios.get(`https://pokeapi.co/api/v2/pokemon/${randomId}`);
     const sprite = spriteResponse.data.sprites.front_default;
     
@@ -80,7 +90,7 @@ function App() {
     }
 
     // Check if the guess is correct
-    if (guess === pokemonName.split('-')[0].toLowerCase()) {
+    if (guess === pokemonName.split(/-(m|f)$/)[0].toLowerCase()) {
       setMessage(`Correct! The Pokémon is ${pokemonName}.`);
       setGameOver(true);
     } else {
@@ -119,7 +129,7 @@ function App() {
   };
 
   const resetGame = () => {
-    fillPokemonList(1);
+    fillPokemonList([1]);
     setUserGuess('');
     setMessage('');
     setAttempts(3);
