@@ -40,10 +40,11 @@ function App() {
     const data = response.data;
     const name = data.name;
     const entries = data.flavor_text_entries;
-    const englishEntry = entries.find(entry => entry.language.name === 'en').flavor_text.replace(/\s+/g, ' ');
+    const allEnglishEntries = entries.filter(entry => entry.language.name === 'en')
+    const englishEntry = allEnglishEntries[Math.floor(Math.random() * allEnglishEntries.length)].flavor_text.replace(/\s+/g, ' ');
     const spriteResponse = await axios.get(`https://pokeapi.co/api/v2/pokemon/${randomId}`);
     const sprite = spriteResponse.data.sprites.front_default;
-
+    
     setPokemonName(name);
     setPokedexEntries(entries);
     setOriginalEntry(englishEntry);
