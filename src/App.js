@@ -4,7 +4,7 @@ import axios from 'axios';
 import './App.css';
 
 function App() {
-  const [pokemonList, setPokemonList] = useState([])
+  const [pokemonList, setPokemonList] = useState([]);
   const [pokemonName, setPokemonName] = useState('');
   const [pokedexEntries, setPokedexEntries] = useState([]);
   const [translatedEntry, setTranslatedEntry] = useState('');
@@ -16,10 +16,11 @@ function App() {
   const [originalEntry, setOriginalEntry] = useState('');
   const [pokemonSprite, setPokemonSprite] = useState('');
   const [loading, setLoading] = useState(false);
+  const [generation, setGeneration] = useState('1');
 
   useEffect(() => {
     getRandomPokemon();
-  }, []);
+  }, [generation]);
 
   useEffect(() => {
     if (originalEntry) {
@@ -39,15 +40,16 @@ function App() {
   }
 
   const getRandomPokemon = async () => {
-    const randomId = Math.floor(Math.random() * 151) + 1;
+    const generationResponse = await axios.get(`https://pokeapi.co/api/v2/generation/${generation}`);
+    const pokemonSpecies = generationResponse.data.pokemon_species;
+    const randomPokemon = pokemonSpecies[Math.floor(Math.random() * pokemonSpecies.length)];
+    const randomId = randomPokemon.url.split('/')[6];
     const response = await axios.get(`https://pokeapi.co/api/v2/pokemon-species/${randomId}`);
     const data = response.data;
     const name = data.name;
     const entries = data.flavor_text_entries;
     const allEnglishEntries = entries.filter(entry => entry.language.name === 'en')
-    // Sort out entries that contain the pokemon's name
     let keptEntries = allEnglishEntries.filter(entry => entry.flavor_text.toLowerCase().indexOf(name) === -1);
-    // Make sure there's at least one element
     if (keptEntries.length === 0)
       keptEntries = allEnglishEntries
     const englishEntry = keptEntries[Math.floor(Math.random() * keptEntries.length)].flavor_text.replace(/\s+/g, ' ');
@@ -79,9 +81,6 @@ function App() {
   };
 
   const handleGuess = () => {
-    // Make sure the pokemon is in the list
-    // Not using the userGuess value so that the guess works when
-    // the user presses enter on the autocomplete options
     let guess = document.getElementById('user-guess').value.toLowerCase().trim();
     setUserGuess(guess);
     if (!pokemonList.includes(guess)) {
@@ -89,7 +88,6 @@ function App() {
       return;
     }
 
-    // Check if the guess is correct
     if (guess === pokemonName.split(/-(m|f)$/)[0].toLowerCase()) {
       setMessage(`Correct! The Pokémon is ${pokemonName}.`);
       setGameOver(true);
@@ -117,19 +115,22 @@ function App() {
     setLanguage(e.target.value);
   };
 
+  const handleGenerationChange = (e) => {
+    setGeneration(e.target.value);
+  };
+
   const handleInputChange = (e, newValue) => {
     setUserGuess(newValue);
   };
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
-      // Let materialUI's change occur first
       setTimeout(handleGuess, 0);
     }
   };
 
   const resetGame = () => {
-    fillPokemonList([1]);
+    fillPokemonList([generation]);
     setUserGuess('');
     setMessage('');
     setAttempts(3);
@@ -152,7 +153,22 @@ function App() {
           <option value="ja">Japanese</option>
           <option value="ru">Russian</option>
           <option value="he">Hebrew</option>
+          <option value="hl">Sanskrit</option>
           <option value="zz">Mangled English</option>
+          <option value="en">Wimpy Normal English</option>
+        </select>
+      </label>
+      <label className="mb-4">
+        <span className="mr-2">Select Generation:</span>
+        <select value={generation} onChange={handleGenerationChange} className="border p-2 rounded">
+          <option value="1">Generation 1</option>
+          <option value="2">Generation 2</option>
+          <option value="3">Generation 3</option>
+          <option value="4">Generation 4</option>
+          <option value="5">Generation 5</option>
+          <option value="6">Generation 6</option>
+          <option value="7">Generation 7</option>
+          <option value="8">Generation 8</option>
         </select>
       </label>
       <div className="bg-white p-4 rounded shadow-md mb-4" style={{ minHeight: '100px' }}>
