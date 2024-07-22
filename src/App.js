@@ -18,8 +18,10 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [generation, setGeneration] = useState('1');
   const [incorrectGuesses, setIncorrectGuesses] = useState([]);
+  const [scores, setScores] = useState({});
 
   useEffect(() => {
+    loadScores();
     getRandomPokemon();
   }, [generation]);
 
@@ -28,6 +30,29 @@ function App() {
       getTranslatedEntry(originalEntry, language);
     }
   }, [language, originalEntry]);
+
+  const loadScores = () => {
+    const savedScores = JSON.parse(localStorage.getItem('pokemonScores')) || {};
+    setScores(savedScores);
+  };
+
+  const saveScores = (newScores) => {
+    localStorage.setItem('pokemonScores', JSON.stringify(newScores));
+  };
+
+  const updateScores = (isWin) => {
+    const newScores = { ...scores };
+    if (!newScores[generation]) {
+      newScores[generation] = { wins: 0, losses: 0 };
+    }
+    if (isWin) {
+      newScores[generation].wins += 1;
+    } else {
+      newScores[generation].losses += 1;
+    }
+    setScores(newScores);
+    saveScores(newScores);
+  };
 
   const fillPokemonList = async (generations) => {
     const totalList = []
@@ -97,6 +122,7 @@ function App() {
     if (guess === pokemonName.split(/-(m|f)$/)[0].toLowerCase()) {
       setMessage(`Correct! The Pokémon is ${pokemonName}.`);
       setGameOver(true);
+      updateScores(true);
     } else {
       setAttempts(attempts - 1);
       setIncorrectGuesses([...incorrectGuesses, guess]);
@@ -105,6 +131,7 @@ function App() {
       } else {
         setMessage(`No more guesses! The Pokémon was ${pokemonName}.`);
         setGameOver(true);
+        updateScores(false);
       }
     }
   };
@@ -112,6 +139,7 @@ function App() {
   const handleGiveUp = () => {
     setMessage(`You gave up! The Pokémon was ${pokemonName}.`);
     setGameOver(true);
+    updateScores(false);
   };
 
   const handleRestart = () => {
@@ -145,12 +173,18 @@ function App() {
     setIncorrectGuesses([]);
   };
 
+  const calculateSuccessRate = (wins, losses) => {
+    const total = wins + losses;
+    if (total === 0) return '0/0';
+    return `${wins}/${total}`;
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
       <h1 className="text-4xl font-bold mb-6">Pokédex Guesser</h1>
       <p className="text-lg mb-4">Translate the Pokédex entry and guess the Pokémon!</p>
       <label className="mb-4">
-        <span className="mr-2">Select Language:</span>
+        <span className="mr-2">Language:</span>
         <select value={language} onChange={handleLanguageChange} className="border p-2 rounded">
           <option value="es">Spanish</option>
           <option value="de">German</option>
@@ -161,13 +195,12 @@ function App() {
           <option value="ja">Japanese</option>
           <option value="ru">Russian</option>
           <option value="he">Hebrew</option>
-          <option value="hl">Sanskrit</option>
           <option value="zz">Mangled English</option>
           <option value="en">Wimpy Normal English</option>
         </select>
       </label>
       <label className="mb-4">
-        <span className="mr-2">Select Generation:</span>
+        <span className="mr-2">Generation:</span>
         <select value={generation} onChange={handleGenerationChange} className="border p-2 rounded">
           <option value="1">Generation 1</option>
           <option value="2">Generation 2</option>
@@ -217,6 +250,10 @@ function App() {
             </>
           )
         )}
+      </div>
+      <div className="flex flex-col items-center mt-4 bg-gray-200 p-4 rounded-lg shadow-md w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-2">Score</h2>
+        <p className="text-lg">Generation {generation} Success Rate: {calculateSuccessRate(scores[generation]?.wins || 0, scores[generation]?.losses || 0)}</p>
       </div>
     </div>
   );
