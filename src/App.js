@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {Autocomplete, TextField} from '@mui/material'
+import { Autocomplete, TextField } from '@mui/material';
 import axios from 'axios';
 import './App.css';
 
@@ -17,6 +17,7 @@ function App() {
   const [pokemonSprite, setPokemonSprite] = useState('');
   const [loading, setLoading] = useState(false);
   const [generation, setGeneration] = useState('1');
+  const [incorrectGuesses, setIncorrectGuesses] = useState([]);
 
   useEffect(() => {
     getRandomPokemon();
@@ -32,12 +33,12 @@ function App() {
     const totalList = []
     for (const generation of generations) {
       const response = await axios.get(`https://pokeapi.co/api/v2/generation/${generation}`);
-      const data = response.data.pokemon_species.map(pokemon => pokemon.name.split(/-(m|f)$/)[0])
+      const data = response.data.pokemon_species.map(pokemon => pokemon.name.split(/-(m|f)$/)[0]);
       totalList.push(...data);
     }
-    totalList.sort()
+    totalList.sort();
     setPokemonList(totalList.filter((item, index) => index === 0 || item !== totalList[index - 1]));
-  }
+  };
 
   const getRandomPokemon = async () => {
     const generationResponse = await axios.get(`https://pokeapi.co/api/v2/generation/${generation}`);
@@ -48,10 +49,10 @@ function App() {
     const data = response.data;
     const name = data.name;
     const entries = data.flavor_text_entries;
-    const allEnglishEntries = entries.filter(entry => entry.language.name === 'en')
+    const allEnglishEntries = entries.filter(entry => entry.language.name === 'en');
     let keptEntries = allEnglishEntries.filter(entry => entry.flavor_text.toLowerCase().indexOf(name) === -1);
     if (keptEntries.length === 0)
-      keptEntries = allEnglishEntries
+      keptEntries = allEnglishEntries;
     const englishEntry = keptEntries[Math.floor(Math.random() * keptEntries.length)].flavor_text.replace(/\s+/g, ' ');
 
     const spriteResponse = await axios.get(`https://pokeapi.co/api/v2/pokemon/${randomId}`);
@@ -84,7 +85,12 @@ function App() {
     let guess = document.getElementById('user-guess').value.toLowerCase().trim();
     setUserGuess(guess);
     if (!pokemonList.includes(guess)) {
-      alert('Invalid Pokémon name for this generation')
+      alert('Invalid Pokémon name for this generation');
+      return;
+    }
+
+    if (incorrectGuesses.includes(guess)) {
+      setMessage(`You already guessed ${guess}. Try a different one.`);
       return;
     }
 
@@ -93,6 +99,7 @@ function App() {
       setGameOver(true);
     } else {
       setAttempts(attempts - 1);
+      setIncorrectGuesses([...incorrectGuesses, guess]);
       if (attempts > 1) {
         setMessage('Incorrect. Try again.');
       } else {
@@ -135,6 +142,7 @@ function App() {
     setMessage('');
     setAttempts(3);
     setGameOver(false);
+    setIncorrectGuesses([]);
   };
 
   return (
