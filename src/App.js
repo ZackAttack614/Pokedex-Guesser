@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Autocomplete, TextField } from '@mui/material';
 import axios from 'axios';
+import Confetti from 'react-confetti';
 import './App.css';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
   const [generation, setGeneration] = useState('1');
   const [incorrectGuesses, setIncorrectGuesses] = useState([]);
   const [scores, setScores] = useState({});
+  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     loadScores();
@@ -55,7 +57,7 @@ function App() {
   };
 
   const fillPokemonList = async (generations) => {
-    const totalList = []
+    const totalList = [];
     for (const generation of generations) {
       const response = await axios.get(`https://pokeapi.co/api/v2/generation/${generation}`);
       const data = response.data.pokemon_species.map(pokemon => pokemon.name.split(/-(m|f)$/)[0]);
@@ -82,7 +84,7 @@ function App() {
 
     const spriteResponse = await axios.get(`https://pokeapi.co/api/v2/pokemon/${randomId}`);
     const sprite = spriteResponse.data.sprites.front_default;
-    
+
     setPokemonName(name);
     setPokedexEntries(entries);
     setOriginalEntry(englishEntry);
@@ -121,6 +123,7 @@ function App() {
 
     if (guess === pokemonName.split(/-(m|f)$/)[0].toLowerCase()) {
       setMessage(`Correct! The Pokémon is ${pokemonName}.`);
+      setShowConfetti(true);
       setGameOver(true);
       updateScores(true);
     } else {
@@ -143,6 +146,7 @@ function App() {
   };
 
   const handleRestart = () => {
+    setShowConfetti(false);
     getRandomPokemon();
   };
 
@@ -181,6 +185,7 @@ function App() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+      {showConfetti && <Confetti />}
       <h1 className="text-4xl font-bold mb-6">Pokédex Guesser</h1>
       <p className="text-lg mb-4">Translate the Pokédex entry and guess the Pokémon!</p>
       <label className="mb-4">
