@@ -200,6 +200,7 @@ function App() {
           <option value="ja">Japanese</option>
           <option value="ru">Russian</option>
           <option value="he">Hebrew</option>
+          <option value="la">Latin</option>
           <option value="zz">Mangled English</option>
           <option value="en">Wimpy Normal English</option>
         </select>
